@@ -73,10 +73,13 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-def register_scheduler_dependencies(bot, questioner_session_pool):
-    """Register bot and session pool for use by scheduled jobs."""
+def register_scheduler_dependencies(
+    bot, questioner_session_pool, main_session_pool=None
+):
+    """Register bot and session pools for use by scheduled jobs."""
     _scheduler_registry["bot"] = bot
     _scheduler_registry["questioner_session_pool"] = questioner_session_pool
+    _scheduler_registry["main_session_pool"] = main_session_pool
 
 
 async def delete_messages(bot: Bot, chat_id: int, message_ids: list[int]):
@@ -441,6 +444,10 @@ async def send_attention_reminder_job(question_token: str):
 
         if not bot or not questioner_session_pool:
             logger.error("Bot or questioner_session_pool not registered in scheduler")
+            return
+
+        if not main_session_pool:
+            logger.error("main_session_pool not registered in scheduler")
             return
 
         # Create a fresh session for this job

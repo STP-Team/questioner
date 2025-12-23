@@ -177,7 +177,7 @@ async def main():
 
     from tgbot.services.scheduler import register_scheduler_dependencies
 
-    register_scheduler_dependencies(bot, questioner_db)
+    register_scheduler_dependencies(bot, questioner_db, main_db)
 
     if bot_config.questioner.remove_old_questions:
         scheduler.add_job(
