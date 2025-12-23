@@ -474,9 +474,6 @@ async def send_attention_reminder(
         question: Question = await questions_repo.questions.get_question(
             token=question_token
         )
-        employee: Employee = await main_repo.employee.get_users(
-            user_id=question.employee_userid
-        )
 
         if not question:
             logger.warning(
@@ -484,6 +481,10 @@ async def send_attention_reminder(
             )
             stop_attention_reminder(question_token)
             return
+
+        employee: Employee = await main_repo.employee.get_users(
+            user_id=question.employee_userid
+        )
 
         # Проверка, что вопрос все еще открыт и не имеет дежурного
         if question.status != "open" or question.duty_userid:
