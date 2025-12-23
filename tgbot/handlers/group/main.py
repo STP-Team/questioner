@@ -93,7 +93,7 @@ async def handle_q_message(
             )
             duty_topics_month = (
                 await questions_repo.questions.get_questions_count_last_month(
-                    duty_userid=user.fullname
+                    duty_userid=str(user.user_id)
                 )
             )
 
