@@ -159,9 +159,17 @@ async def main():
 
     dp = Dispatcher(storage=storage)
 
-    main_db_engine = create_engine(bot_config.db, db_name=bot_config.db.main_db)
+    main_db_engine = create_engine(
+        host=bot_config.db.host,
+        username=bot_config.db.user,
+        password=bot_config.db.password,
+        db_name=bot_config.db.main_db,
+    )
     questioner_db_engine = create_engine(
-        bot_config.db, db_name=bot_config.db.questioner_db
+        host=bot_config.db.host,
+        username=bot_config.db.user,
+        password=bot_config.db.password,
+        db_name=bot_config.db.questioner_db,
     )
 
     main_db = create_session_pool(main_db_engine)

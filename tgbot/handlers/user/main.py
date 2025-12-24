@@ -6,8 +6,10 @@ from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from stp_database import Employee, MainRequestsRepo, Question
+from stp_database.models.Questions import Question
+from stp_database.models.STP import Employee
 from stp_database.repo.Questions.requests import QuestionsRequestsRepo
+from stp_database.repo.STP import MainRequestsRepo
 
 from tgbot.keyboards.user.main import (
     AskQuestionMenu,

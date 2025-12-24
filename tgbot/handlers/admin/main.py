@@ -4,7 +4,7 @@ from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from stp_database import Employee
+from stp_database.models.STP import Employee
 from stp_database.repo.Questions.requests import QuestionsRequestsRepo
 
 from tgbot.filters.admin import AdminFilter
