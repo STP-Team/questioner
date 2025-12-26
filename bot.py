@@ -270,7 +270,7 @@ async def main():
                 bot=bot,
                 secret_token=bot_config.tg_bot.webhook_secret,
             )
-            webhook_handler.register(app, path=bot_config.tg_bot.webhook_path)
+            webhook_handler.register(app, path="/")
             setup_application(app, dp, bot=bot)
 
             # Запускаем веб-сервер
