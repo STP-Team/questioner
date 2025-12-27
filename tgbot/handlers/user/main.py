@@ -30,8 +30,9 @@ logger = logging.getLogger(__name__)
 async def start_user(_message: Message, dialog_manager: DialogManager):
     try:
         await dialog_manager.done()
-    except NoContextError:
-        pass
+    except NoContextError as exc:
+        # No active dialog to finish is an expected situation on /start
+        logger.debug("No active dialog to finish on /start: %s", exc)
 
     await dialog_manager.start(UserSG.menu, mode=StartMode.RESET_STACK)
 
