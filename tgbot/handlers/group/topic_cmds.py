@@ -12,7 +12,7 @@ from stp_database.repo.STP import MainRequestsRepo
 from tgbot.filters.topic import IsTopicMessageWithCommand
 from tgbot.keyboards.group.main import FinishedQuestion, question_finish_duty_kb
 from tgbot.keyboards.user.main import question_finish_employee_kb
-from tgbot.misc.helpers import format_fullname, short_name
+from tgbot.misc.helpers import format_fullname
 from tgbot.services.scheduler import (
     start_attention_reminder,
     stop_inactivity_timer,
@@ -34,124 +34,78 @@ async def end_q_cmd(
         group_id=message.chat.id, topic_id=message.message_thread_id
     )
 
-    if question is not None:
-        group_settings = await questions_repo.settings.get_settings_by_group_id(
-            group_id=question.group_id,
-        )
+    if not question:
+        await message.answer("""<b>⚠️ Предупреждение</b>
+        
+Не удалось найти закрываемый вопрос""")
+        return
 
-        if question.status != "closed" and (
-            question.duty_userid == user.user_id or user.role == 10
-        ):
-            # Останавливаем таймер бездействия
-            stop_inactivity_timer(question.token)
+    if question.status == "closed":
+        await message.reply("""<b>⚠️ Предупреждение</b>
 
-            await questions_repo.questions.update_question(
-                token=question.token,
-                status="closed",
-                end_time=datetime.datetime.now(tz=pytz.timezone("Asia/Yekaterinburg")),
-            )
+Вопрос уже закрыт""")
+        return
 
-            if question.quality_duty is not None:
-                if question.quality_duty:
-                    await message.bot.send_message(
-                        chat_id=question.group_id,
-                        message_thread_id=question.topic_id,
-                        text=f"""<b>🔒 Вопрос закрыт</b>
-
-👮‍♂️ Дежурный: <b>{user.fullname if user.fullname else "Не закреплен"}</b>
-👍 Специалист <b>не мог решить вопрос самостоятельно</b>""",
-                        reply_markup=question_finish_duty_kb(
-                            question=question,
-                        ),
-                    )
-                else:
-                    await message.bot.send_message(
-                        chat_id=question.group_id,
-                        message_thread_id=question.topic_id,
-                        text=f"""<b>🔒 Вопрос закрыт</b>
-                        
-👮‍♂️ Дежурный: <b>{user.fullname}</b>
-👎 Специалист <b>мог решить вопрос самостоятельно</b>""",
-                        reply_markup=question_finish_duty_kb(
-                            question=question,
-                        ),
-                    )
-            else:
-                await message.bot.send_message(
-                    chat_id=question.group_id,
-                    message_thread_id=question.topic_id,
-                    text=f"""<b>🔒 Вопрос закрыт</b>
-                    
-👮‍♂️ Дежурный: <b>{user.fullname}</b>
-Оцени, мог ли специалист решить его самостоятельно""",
-                    reply_markup=question_finish_duty_kb(
-                        question=question,
-                    ),
-                )
-
-            await message.bot.edit_forum_topic(
-                chat_id=question.group_id,
-                message_thread_id=question.topic_id,
-                name=question.token,
-                icon_custom_emoji_id=group_settings.get_setting("emoji_closed"),
-            )
-            await message.bot.close_forum_topic(
-                chat_id=question.group_id,
-                message_thread_id=question.topic_id,
-            )
-
-            employee: Employee = await stp_repo.employee.get_users(
-                user_id=question.employee_userid
-            )
-
-            await message.bot.send_message(
-                chat_id=employee.user_id,
-                text="<b>🔒 Вопрос закрыт</b>",
-                reply_markup=ReplyKeyboardRemove(),
-            )
-
-            await message.bot.send_message(
-                chat_id=employee.user_id,
-                text=f"""Дежурный <b>{short_name(user.fullname)}</b> закрыл вопрос
-Оцени, помогли ли тебе решить его""",
-                reply_markup=question_finish_employee_kb(question=question),
-            )
-
-            logger.info(
-                f"[Вопрос] - [Закрытие] Пользователь {message.from_user.username} ({message.from_user.id}): Закрыт вопрос {question.token} со специалистом {question.employee_userid}"
-            )
-        elif question.status != "closed" and question.duty_userid != user.user_id:
-            await message.reply("""<b>⚠️ Предупреждение</b>
+    if question.duty_userid != user.user_id:
+        await message.reply("""<b>⚠️ Предупреждение</b>
 
 Это не твой чат!
 
 <i>Твое сообщение не отобразится специалисту</i>""")
-            logger.warning(
-                f"[Вопрос] - [Закрытие] Пользователь {message.from_user.username} ({message.from_user.id}): Попытка закрытия вопроса {question.token} неуспешна. Вопрос принадлежит другому дежурному"
-            )
-        elif question.status == "closed":
-            await message.bot.edit_forum_topic(
-                chat_id=question.group_id,
-                message_thread_id=question.topic_id,
-                name=question.token,
-                icon_custom_emoji_id=group_settings.get_setting("emoji_closed"),
-            )
-            await message.reply("<b>🔒 Вопрос был закрыт</b>")
-            await message.bot.close_forum_topic(
-                chat_id=question.group_id,
-                message_thread_id=question.topic_id,
-            )
-            logger.warning(
-                f"[Вопрос] - [Закрытие] Пользователь {message.from_user.username} ({message.from_user.id}): Попытка закрытия вопроса {question.token} неуспешна. Вопрос уже закрыт"
-            )
+        return
 
-    else:
-        await message.answer("""<b>⚠️ Ошибка</b>
+    # Останавливаем таймер бездействия
+    stop_inactivity_timer(question.token)
 
-Не удалось найти текущую тему в базе""")
-        logger.error(
-            f"[Вопрос] - [Закрытие] Пользователь {message.from_user.username} ({message.from_user.id}): Попытка закрытия вопроса неуспешна. Не удалось найти вопрос в базе с TopicId = {message.message_id}"
-        )
+    # Обновляем статус вопроса
+    await questions_repo.questions.update_question(
+        token=question.token,
+        end_time=datetime.datetime.now(tz=pytz.timezone("Asia/Yekaterinburg")),
+        status="closed",
+    )
+
+    # Уведомляем дежурного
+    await message.answer(
+        text=f"""🔒 <b>Вопрос закрыт</b>
+
+👮‍♂️ Дежурный: <b>{format_fullname(user, True, True)}</b>
+
+<i>Токен вопроса: <code>{question.token}</code></i>""",
+        reply_markup=question_finish_duty_kb(
+            question=question,
+        ),
+    )
+
+    # Уведомляем специалиста
+    employee = await stp_repo.employee.get_users(user_id=question.employee_userid)
+    await message.bot.send_message(
+        chat_id=employee.user_id,
+        text="<b>🔒 Вопрос закрыт</b>",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    await message.bot.send_message(
+        chat_id=employee.user_id,
+        text=f"""Дежурный <b>{format_fullname(user, True, True)}</b> закрыл вопрос
+
+Оцени, помогли ли тебе решить его""",
+        reply_markup=question_finish_employee_kb(question=question),
+    )
+
+    # Закрываем топик
+    group_settings = await questions_repo.settings.get_settings_by_group_id(
+        group_id=question.group_id,
+    )
+    await message.bot.edit_forum_topic(
+        chat_id=question.group_id,
+        message_thread_id=question.topic_id,
+        name=question.token,
+        icon_custom_emoji_id=group_settings.get_setting("emoji_closed"),
+    )
+    await message.bot.close_forum_topic(
+        chat_id=question.group_id,
+        message_thread_id=question.topic_id,
+    )
 
 
 @topic_cmds_router.message(IsTopicMessageWithCommand("release"))

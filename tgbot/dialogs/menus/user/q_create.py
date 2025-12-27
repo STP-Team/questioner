@@ -2,11 +2,16 @@ from typing import Any
 
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput, TextInput
-from aiogram_dialog.widgets.kbd import Button, Row, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Next, Row, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format, Multi
 from magic_filter import F
 
-from tgbot.dialogs.events.user.q_create import check_link, on_confirm, on_message_input
+from tgbot.dialogs.events.user.q_create import (
+    link_error,
+    on_confirm,
+    on_message_input,
+    validate_link,
+)
 from tgbot.dialogs.getters.user.q_create import confirmation_getter
 from tgbot.dialogs.states.user.main import QuestionSG
 from tgbot.dialogs.widgets.buttons import HOME_BTN
@@ -26,8 +31,10 @@ question_link = Window(
 
 Прикрепи ссылку на регламент из клевера, по которому у тебя вопрос"""),
     TextInput(
-        id="link_input",
-        on_success=check_link,
+        id="link",
+        type_factory=validate_link,
+        on_success=Next(),
+        on_error=link_error,
     ),
     Row(
         SwitchTo(
@@ -51,7 +58,7 @@ confirmation = Window(
         Format("""
 
 🔗 <b>Ссылка на регламент:</b>
-<code>{regulation_link}</code>
+<code>{link}</code>
 
 Все верно?"""),
         sep="",

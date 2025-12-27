@@ -11,21 +11,19 @@ logger = logging.getLogger(__name__)
 
 class ActiveQuestion(BaseFilter):
     async def __call__(
-        self, obj: Message, questions_repo: QuestionsRequestsRepo, **kwargs
+        self, obj: Message, questions_repo: QuestionsRequestsRepo, **_kwargs
     ) -> bool | dict[str, Question]:
         """Filter to check if user has an active question
         ONLY works in private chats, not in groups
         :param obj: Message object being filtered
         :param questions_repo: Database repository for questions
-        :param kwargs: Additional arguments
+        :param _kwargs: Additional arguments
         :return: Status whether user has an active question
         """
         if obj.chat.type != "private":
             return False
 
-        active_questions: Sequence[
-            Question
-        ] = await questions_repo.questions.get_active_questions()
+        active_questions = await questions_repo.questions.get_active_questions()
 
         for question in active_questions:
             if question.employee_userid == obj.from_user.id:
@@ -44,7 +42,7 @@ class ActiveQuestionWithCommand(BaseFilter):
         self.command = command
 
     async def __call__(
-        self, obj: Message, questions_repo: QuestionsRequestsRepo, **kwargs
+        self, obj: Message, questions_repo: QuestionsRequestsRepo, **_kwargs
     ) -> bool | dict[str, Question] | None:
         if self.command:
             if obj.chat.type != "private":

@@ -8,7 +8,7 @@ ADMIN_ROLE = 10
 
 
 class AdminFilter(BaseFilter):
-    async def __call__(self, obj: Message, user: Employee, **kwargs) -> bool:
+    async def __call__(self, _obj: Message, user: Employee, **_kwargs) -> bool:
         if user is None:
             return False
 

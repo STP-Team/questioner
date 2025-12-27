@@ -451,8 +451,10 @@ async def return_q_duty(
             chat_id=question.employee_userid,
             text=f"""<b>🔓 Вопрос переоткрыт</b>
 
-Дежурный <b>{short_name(user.fullname)}</b> переоткрыл вопрос:
-<blockquote expandable><i>{question.question_text}</i></blockquote>""",
+Дежурный <b>{format_fullname(user, True, True)}</b> переоткрыл вопрос:
+
+❓ <b>Изначальный вопрос:</b>
+<blockquote expandable>{question.question_text}</blockquote>""",
             reply_markup=finish_question_kb(),
         )
         logger.info(

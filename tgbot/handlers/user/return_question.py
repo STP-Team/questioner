@@ -14,7 +14,7 @@ from tgbot.keyboards.user.main import (
     QuestionQualitySpecialist,
     finish_question_kb,
 )
-from tgbot.misc.helpers import short_name
+from tgbot.misc.helpers import format_fullname, short_name
 
 user_q_return = Router()
 user_q_return.message.filter(F.chat.type == "private")
@@ -88,10 +88,10 @@ async def q_return(
             message_thread_id=question.topic_id,
             text=f"""<b>🔓 Вопрос переоткрыт</b>
 
-Специалист <b>{short_name(user.fullname)}</b> переоткрыл вопрос сразу после закрытия
+Специалист <b>{format_fullname(user, True, True)}</b> переоткрыл вопрос сразу после закрытия
 {duty_info}
 
-<b>❓ Изначальный вопрос:</b>
+❓ <b>Изначальный вопрос:</b>
 <blockquote expandable><i>{question.question_text}</i></blockquote>""",
             reply_markup=reopened_question_kb(),
             disable_web_page_preview=True,

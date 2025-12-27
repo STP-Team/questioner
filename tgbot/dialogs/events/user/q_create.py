@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 import pytz
+import validators
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode
 from stp_database.models.STP import Employee
@@ -54,6 +55,9 @@ async def check_link(
     if "clever.ertelecom.ru" not in text:
         return "Ссылка должна вести на <a href='clever.ertelecom.ru'>Клевер</a>"
 
+    if not validators.url(text):
+        return "Некорректная ссылка. Проверь правильность ввода"
+
     # Проверяем на запрещенные ссылки
     extracted_link = extract_clever_link(text)
     if extracted_link:
@@ -80,6 +84,61 @@ async def check_link(
     await dialog_manager.next()
 
 
+def validate_link(text: str) -> str:
+    """Валидация ссылки на регламент для TextInput.
+
+    Args:
+        text: Введенный текст ссылки
+
+    Returns:
+        str: Валидированная ссылка
+
+    Raises:
+        ValueError: Если ссылка невалидна
+    """
+    if not text.startswith("http"):
+        text = "https://" + text
+
+    if "clever.ertelecom.ru" not in text:
+        raise ValueError("Ссылка должна вести на Клевер")
+
+    if not validators.url(text):
+        raise ValueError("Некорректная ссылка. Проверь правильность ввода")
+
+    # Проверяем на запрещенные ссылки
+    extracted_link = extract_clever_link(text)
+    if extracted_link:
+        forbidden_links = [
+            "https://clever.ertelecom.ru/content/space/4/wiki/1808",
+            "https://clever.ertelecom.ru/content/space/4/wiki/1808/",
+            "https://clever.ertelecom.ru/content/space/4/wiki/1808/page/0",
+            "https://clever.ertelecom.ru/content/space/4/wiki/1808/page/0/",
+            "https://clever.ertelecom.ru/content/space/4/wiki/1808/page/1",
+            "https://clever.ertelecom.ru/content/space/4/wiki/1808/page/1/",
+            "https://clever.ertelecom.ru/content/space/4/wiki/10259",
+            "https://clever.ertelecom.ru/content/space/4/wiki/10259/",
+            "https://clever.ertelecom.ru/content/space/4/wiki/10259/page/0",
+            "https://clever.ertelecom.ru/content/space/4/wiki/10259/page/0/",
+            "https://clever.ertelecom.ru/content/space/4/wiki/10259/page/1",
+            "https://clever.ertelecom.ru/content/space/4/wiki/10259/page/1/",
+            "https://clever.ertelecom.ru/content/space/4",
+            "https://clever.ertelecom.ru/content/space/4/",
+        ]
+        if extracted_link in forbidden_links:
+            raise ValueError(
+                "❌ Ссылка содержит запрещенную страницу. Отправь корректную ссылку на регламент"
+            )
+
+    return text
+
+
+async def link_error(
+    message: Message, _widget, _dialog_manager: DialogManager, error_: ValueError
+):
+    """Обработка ошибок валидации ссылки."""
+    await message.answer(f"❌ {str(error_)}")
+
+
 async def on_confirm(
     event: CallbackQuery, _button, dialog_manager: DialogManager, **_kwargs
 ):
@@ -102,7 +161,7 @@ async def on_confirm(
 
     # Получаем сохраненные данные диалога
     user_message = dialog_manager.dialog_data.get("user_message", {})
-    regulation_link = dialog_manager.dialog_data.get("regulation_link")
+    regulation_link = dialog_manager.dialog_data.get("link")
     question_text = user_message.get("text", "")
 
     if not question_text or question_text.strip() == "":
@@ -172,7 +231,9 @@ async def on_confirm(
             disable_web_page_preview=True,
             reply_markup=activity_status_toggle_kb(
                 token=new_question.token,
-                clever_link=regulation_link if regulation_link else None,
+                clever_link=regulation_link
+                if regulation_link and validators.url(regulation_link)
+                else None,
                 current_status=new_question.activity_status_enabled,
                 global_status=group_settings.get_setting("activity_status"),
             ),
@@ -196,7 +257,7 @@ async def on_confirm(
         # Запускаем напоминание
         await start_attention_reminder(new_question.token, questions_repo)
 
-        logging.info(
+        logging.debug(
             f"[Dialog] {event.from_user.username} ({event.from_user.id}): Создан новый вопрос {new_question.token}"
         )
 
