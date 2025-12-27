@@ -15,7 +15,9 @@ from stp_database.repo.STP import MainRequestsRepo
 
 from tgbot.config import load_config
 from tgbot.keyboards.group.main import closed_question_duty_kb
-from tgbot.keyboards.user.main import closed_question_specialist_kb
+from tgbot.keyboards.user.main import (
+    question_finish_employee_kb,
+)
 
 config = load_config(".env")
 
@@ -325,7 +327,7 @@ async def auto_close_question(
             await bot.send_message(
                 chat_id=question.employee_userid,
                 text=f"Твой вопрос был закрыт из-за отсутствия активности в течение {group_settings.get_setting('activity_close_minutes')} минут",
-                reply_markup=closed_question_specialist_kb(token=question_token),
+                reply_markup=question_finish_employee_kb(question=question),
             )
 
     except Exception as e:

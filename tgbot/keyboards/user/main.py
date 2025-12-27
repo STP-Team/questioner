@@ -1,5 +1,3 @@
-from typing import Sequence
-
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import (
     InlineKeyboardButton,
@@ -14,10 +12,6 @@ from tgbot.keyboards.admin.main import AdminMenu
 
 class MainMenu(CallbackData, prefix="menu"):
     menu: str
-
-
-class AskQuestionMenu(CallbackData, prefix="ask_question"):
-    found_regulation: bool
 
 
 class QuestionQualitySpecialist(CallbackData, prefix="q_quality_spec"):
@@ -67,57 +61,6 @@ def user_kb(is_role_changed: bool = False) -> InlineKeyboardMarkup:
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-def back_kb() -> InlineKeyboardMarkup:
-    """Клавиатура для возврата в главное меню.
-
-    :return: Объект встроенной клавиатуры для возврата главного меню
-    """
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text="↩️ Назад", callback_data=MainMenu(menu="main").pack()
-            ),
-        ]
-    ]
-
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=buttons,
-    )
-    return keyboard
-
-
-def question_ask_kb(is_user_in_top: bool = False) -> InlineKeyboardMarkup:
-    """Клавиатура для оформления вопроса.
-
-    :return: Объект встроенной клавиатуры для возврата главного меню
-    """
-    if is_user_in_top:
-        buttons = [
-            [
-                InlineKeyboardButton(
-                    text="↩️ Домой", callback_data=MainMenu(menu="main").pack()
-                ),
-            ]
-        ]
-    else:
-        buttons = [
-            [
-                InlineKeyboardButton(
-                    text="🤷‍♂️ Не нашел",
-                    callback_data=AskQuestionMenu(found_regulation=False).pack(),
-                ),
-                InlineKeyboardButton(
-                    text="↩️ Домой", callback_data=MainMenu(menu="main").pack()
-                ),
-            ]
-        ]
-
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=buttons,
-    )
-    return keyboard
 
 
 def cancel_question_kb(token: str) -> InlineKeyboardMarkup:
@@ -211,90 +154,6 @@ def question_finish_employee_kb(
         inline_keyboard=buttons,
     )
     return keyboard
-
-
-def closed_question_specialist_kb(token: str) -> InlineKeyboardMarkup:
-    """Клавиатура закрытого диалога для специалиста.
-
-    :param token: Уникальный токен вопроса
-    :return: Объект встроенной клавиатуры для закрытого диалога
-    """
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text="🤔 Новый вопрос", callback_data=MainMenu(menu="ask").pack()
-            ),
-            InlineKeyboardButton(
-                text="🔄 Вернуть вопрос",
-                callback_data=QuestionQualitySpecialist(
-                    return_question=True, token=token
-                ).pack(),
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="🏠 Главное меню", callback_data=MainMenu(menu="main").pack()
-            )
-        ],
-    ]
-
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=buttons,
-    )
-    return keyboard
-
-
-def questions_list_kb(questions: Sequence[Question]) -> InlineKeyboardMarkup:
-    """Клавиатура списка доступных к возврату вопросов
-
-    :param Sequence[Question] questions: Список вопросов для отображения
-    :return: Объект встроенной клавиатуры для закрытого диалога
-    """
-    buttons = []
-
-    for question in questions:
-        date_str = (
-            question.end_time.strftime("%d.%m.%Y %H:%M")
-            if question.end_time
-            else question.start_time.strftime("%d.%m.%Y")
-        )
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"📅 {date_str} | {question.question_text}",
-                callback_data=ReturnQuestion(
-                    action="show", token=question.token
-                ).pack(),
-            )
-        ])
-
-    buttons.append([
-        InlineKeyboardButton(text="↩️ Назад", callback_data=MainMenu(menu="main").pack())
-    ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-def question_confirm_kb(token: str) -> InlineKeyboardMarkup:
-    """Клавиатура подтверждения возврата вопроса в работу
-
-    :param str token: Уникальный токен вопроса
-    :return: Объект встроенной клавиатуры для закрытого диалога
-    """
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text="✅ Да, вернуть",
-                callback_data=ReturnQuestion(action="confirm", token=token).pack(),
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="↩️ Назад", callback_data=MainMenu(menu="return").pack()
-            )
-        ],
-    ]
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def activity_status_toggle_kb(

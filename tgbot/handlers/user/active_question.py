@@ -22,7 +22,6 @@ from tgbot.filters.active_question import ActiveQuestion, ActiveQuestionWithComm
 from tgbot.keyboards.group.main import question_finish_duty_kb
 from tgbot.keyboards.user.main import (
     QuestionQualitySpecialist,
-    closed_question_specialist_kb,
     question_finish_employee_kb,
 )
 from tgbot.middlewares.MessagePairingMiddleware import store_message_connection
@@ -33,24 +32,20 @@ from tgbot.services.scheduler import (
     stop_inactivity_timer,
 )
 
-user_q_router = Router()
-user_q_router.message.filter(F.chat.type == "private")
-user_q_router.callback_query.filter(F.message.chat.type == "private")
+user_q = Router()
+user_q.message.filter(F.chat.type == "private")
+user_q.callback_query.filter(F.message.chat.type == "private")
 
 logger = logging.getLogger(__name__)
 
 
-@user_q_router.message(ActiveQuestionWithCommand("end"))
+@user_q.message(ActiveQuestionWithCommand("end"))
 async def active_question_end(
     message: Message,
     questions_repo: QuestionsRequestsRepo,
     user: Employee,
-    active_question_token: str,
+    question: Question,
 ):
-    question: Question = await questions_repo.questions.get_question(
-        token=active_question_token
-    )
-
     if not question:
         await message.answer("""⚠️ <b>Ошибка закрытия</b>
 
@@ -110,26 +105,22 @@ async def active_question_end(
     )
 
 
-@user_q_router.message(ActiveQuestion())
+@user_q.message(ActiveQuestion())
 async def active_question(
     message: Message,
     questions_repo: QuestionsRequestsRepo,
     user: Employee,
-    active_question_token: str,
+    question: Question,
 ) -> None:
     if message.message_thread_id:
         return
-
-    question: Question = await questions_repo.questions.get_question(
-        token=active_question_token
-    )
 
     if message.text == "✅️ Закрыть вопрос":
         await active_question_end(
             message=message,
             questions_repo=questions_repo,
             user=user,
-            active_question_token=active_question_token,
+            active_question_token=question.token,
         )
         return
 
@@ -155,7 +146,7 @@ async def active_question(
                 message_thread_id=question.topic_id,
                 reply_to_message_id=message_pair.topic_message_id,
             )
-            logger.info(
+            logger.debug(
                 f"[Вопрос] - [Ответ] Найдена связь для ответа: {message.chat.id}:{message.reply_to_message.message_id} -> {message_pair.topic_chat_id}:{message_pair.topic_message_id}"
             )
         else:
@@ -216,21 +207,18 @@ async def active_question(
     )
 
 
-@user_q_router.edited_message(ActiveQuestion())
+@user_q.edited_message(ActiveQuestion())
 async def handle_edited_message(
     message: Message,
-    active_question_token: str,
     questions_repo: QuestionsRequestsRepo,
     user: Employee,
+    question: Question,
 ) -> None:
     """Универсальный хендлер для редактируемых сообщений пользователей в активных вопросах"""
-    question: Question = await questions_repo.questions.get_question(
-        token=active_question_token
-    )
     if not question:
-        logger.error(
-            f"[Редактирование] Не найден вопрос с токеном {active_question_token}"
-        )
+        await message.answer("""⚠️ <b>Ошибка</b>
+
+Не удалось найти вопрос в базе""")
         return
 
     # Проверяем, что вопрос все еще активен
@@ -361,9 +349,7 @@ async def handle_edited_message(
         )
 
 
-@user_q_router.callback_query(
-    QuestionQualitySpecialist.filter(F.return_question.is_(False))
-)
+@user_q.callback_query(QuestionQualitySpecialist.filter(F.return_question.is_(False)))
 async def question_quality_employee(
     callback: CallbackQuery,
     callback_data: QuestionQualitySpecialist,
@@ -378,13 +364,13 @@ async def question_quality_employee(
         await callback.message.edit_text(
             """Ты поставил оценку:
 👍 Дежурный <b>помог решить твой вопрос</b>""",
-            reply_markup=closed_question_specialist_kb(token=callback_data.token),
+            reply_markup=question_finish_employee_kb(question=question),
         )
     else:
         await callback.message.edit_text(
             """Ты поставил оценку:
 👎 Дежурный <b>не помог решить твой вопрос</b>""",
-            reply_markup=closed_question_specialist_kb(token=callback_data.token),
+            reply_markup=question_finish_employee_kb(question=question),
         )
     logger.info(
         f"[Вопрос] - [Оценка] Пользователь {callback.from_user.username} ({callback.from_user.id}): Выставлена оценка {callback_data.answer} вопросу {question.token} от специалиста"

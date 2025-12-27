@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ActiveQuestion(BaseFilter):
     async def __call__(
         self, obj: Message, questions_repo: QuestionsRequestsRepo, **kwargs
-    ) -> dict[str, str] | bool:
+    ) -> bool | dict[str, Question]:
         """Filter to check if user has an active question
         ONLY works in private chats, not in groups
         :param obj: Message object being filtered
@@ -29,15 +29,11 @@ class ActiveQuestion(BaseFilter):
 
         for question in active_questions:
             if question.employee_userid == obj.from_user.id:
-                active_question_token = question.token
+                return {
+                    "question": question,
+                }
 
-                logger.info(
-                    f"[Активные вопросы] Найден активный вопрос с токеном {active_question_token} у специалиста {obj.from_user.id}"
-                )
-
-                return {"active_question_token": active_question_token}
-
-        logger.info(
+        logger.debug(
             f"[Активные вопросы] Не найдено активных вопросов у специалиста {obj.from_user.id}"
         )
         return False
@@ -49,7 +45,7 @@ class ActiveQuestionWithCommand(BaseFilter):
 
     async def __call__(
         self, obj: Message, questions_repo: QuestionsRequestsRepo, **kwargs
-    ) -> None | bool | dict[str, str]:
+    ) -> bool | dict[str, Question] | None:
         if self.command:
             if obj.chat.type != "private":
                 return False
@@ -63,13 +59,7 @@ class ActiveQuestionWithCommand(BaseFilter):
 
             for question in current_questions:
                 if question.employee_userid == obj.from_user.id:
-                    active_question_token = question.token
-
-                    logger.info(
-                        f"[Активные вопросы] Найден активный вопрос с токеном {active_question_token} у специалиста {obj.from_user.id}"
-                    )
-
-                    return {"active_question_token": active_question_token}
+                    return {"question": question}
 
             return False
         logger.info(

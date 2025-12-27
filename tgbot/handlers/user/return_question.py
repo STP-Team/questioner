@@ -16,14 +16,14 @@ from tgbot.keyboards.user.main import (
 )
 from tgbot.misc.helpers import short_name
 
-emp_q_return_router = Router()
-emp_q_return_router.message.filter(F.chat.type == "private")
-emp_q_return_router.callback_query.filter(F.message.chat.type == "private")
+user_q_return = Router()
+user_q_return.message.filter(F.chat.type == "private")
+user_q_return.callback_query.filter(F.message.chat.type == "private")
 
 logger = logging.getLogger(__name__)
 
 
-@emp_q_return_router.callback_query(QuestionQualitySpecialist.filter(F.return_question))
+@user_q_return.callback_query(QuestionQualitySpecialist.filter(F.return_question))
 async def q_return(
     callback: CallbackQuery,
     callback_data: QuestionQualitySpecialist,
