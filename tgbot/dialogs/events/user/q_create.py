@@ -45,6 +45,23 @@ async def on_message_input(
             message.document.file_id
         )
 
+    # Получаем пользователя и настройки группы
+    user: Employee = dialog_manager.middleware_data["user"]
+    questions_repo: QuestionsRequestsRepo = dialog_manager.middleware_data[
+        "questions_repo"
+    ]
+
+    # Получаем настройки группы для проверки ask_clever_link
+    target_forum_id = await get_target_forum(user)
+    group_settings = await questions_repo.settings.get_settings_by_group_id(
+        group_id=target_forum_id
+    )
+
+    # Если настройка ask_clever_link выключена, пропускаем этап ввода ссылки
+    if not group_settings.get_setting("ask_clever_link"):
+        await dialog_manager.switch_to(QuestionSG.confirmation)
+        return
+
     # Проверяем, есть ли ссылка на Клевер в тексте сообщения
     extracted_link = extract_clever_link(message_text)
 
@@ -102,6 +119,7 @@ async def check_link(
 
     dialog_manager.dialog_data["link"] = text
     await dialog_manager.next()
+    return None
 
 
 def validate_link(text: str) -> str:
