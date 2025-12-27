@@ -55,12 +55,14 @@ confirmation = Window(
 📝 <b>Твой вопрос:</b>
 <blockquote>{user_text}</blockquote>"""),
         Format("\n📎 Есть прикрепленные файлы", when=F["has_attachments"]),
-        Format("""
+        Format(
+            """
 
 🔗 <b>Ссылка на регламент:</b>
-<code>{link}</code>
-
-Все верно?"""),
+<code>{link}</code>""",
+            when=F["ask_clever_link"] & F["link"],
+        ),
+        Format("\n\nВсе верно?"),
         sep="",
     ),
     Button(
@@ -71,8 +73,15 @@ confirmation = Window(
     Row(
         SwitchTo(
             Const("↩️ Назад"),
-            id="back",
+            id="back_to_link",
             state=QuestionSG.question_link,
+            when=F["ask_clever_link"],
+        ),
+        SwitchTo(
+            Const("↩️ Назад"),
+            id="back_to_text",
+            state=QuestionSG.question_text,
+            when=~F["ask_clever_link"],
         ),
         HOME_BTN,
     ),
