@@ -109,7 +109,7 @@ def question_finish_employee_kb(
     """
     buttons = []
 
-    if not question.quality_employee:
+    if question.quality_employee is None:
         buttons.append(
             [
                 InlineKeyboardButton(

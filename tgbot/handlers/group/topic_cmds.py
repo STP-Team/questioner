@@ -80,15 +80,19 @@ async def end_q_cmd(
     employee = await stp_repo.employee.get_users(user_id=question.employee_userid)
     await message.bot.send_message(
         chat_id=employee.user_id,
-        text="<b>🔒 Вопрос закрыт</b>",
+        text=f"""<b>🔒 Вопрос закрыт</b>
+        
+Дежурный <b>{format_fullname(user, True, True)}</b> закрыл вопрос""",
         reply_markup=ReplyKeyboardRemove(),
     )
 
     await message.bot.send_message(
         chat_id=employee.user_id,
-        text=f"""Дежурный <b>{format_fullname(user, True, True)}</b> закрыл вопрос
+        text="""⚖️ <b>Оценка вопроса</b>
 
-Оцени, помогли ли тебе решить его""",
+Оцени, помогли ли тебе решить вопрос
+
+<i>Пожалуйста, удели время оценке. Это важно для статистики</i>""",
         reply_markup=question_finish_employee_kb(question=question),
     )
 

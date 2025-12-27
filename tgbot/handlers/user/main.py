@@ -9,9 +9,10 @@ from stp_database.models.Questions import Question
 from stp_database.models.STP import Employee
 from stp_database.repo.Questions.requests import QuestionsRequestsRepo
 
-from tgbot.dialogs.states.user.main import UserSG
+from tgbot.dialogs.states.user.main import QuestionSG, UserSG
 from tgbot.keyboards.user.main import (
     CancelQuestion,
+    MainMenu,
 )
 from tgbot.misc.helpers import format_fullname
 from tgbot.services.scheduler import (
@@ -33,6 +34,14 @@ async def start_user(_message: Message, dialog_manager: DialogManager):
     except NoContextError as exc:
         logger.debug("No active dialog to finish on /start: %s", exc)
 
+    await dialog_manager.start(UserSG.menu, mode=StartMode.RESET_STACK)
+
+
+@user_router.callback_query(MainMenu.filter(F.menu == "main"))
+async def home(
+    _event: CallbackQuery,
+    dialog_manager: DialogManager,
+):
     await dialog_manager.start(UserSG.menu, mode=StartMode.RESET_STACK)
 
 
@@ -92,3 +101,11 @@ async def cancel_question(
 
 <i>Топик будет удален через 30 секунд</i>""",
     )
+
+
+@user_router.callback_query(MainMenu.filter(F.menu == "ask"))
+async def ask_question(
+    _event: CallbackQuery,
+    dialog_manager: DialogManager,
+):
+    await dialog_manager.start(QuestionSG.question_text, mode=StartMode.RESET_STACK)

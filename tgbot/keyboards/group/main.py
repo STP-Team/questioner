@@ -46,7 +46,7 @@ def question_finish_duty_kb(
     """
     buttons = []
 
-    if not question.quality_duty:
+    if question.quality_duty is None:
         buttons.append(
             [
                 InlineKeyboardButton(

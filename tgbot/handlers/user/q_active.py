@@ -73,8 +73,11 @@ async def active_question_end(
         text="🔒 <b>Вопрос закрыт</b>", reply_markup=ReplyKeyboardRemove()
     )
     await message.answer(
-        """
-Оцени, помогли ли тебе решить вопрос""",
+        """⚖️ <b>Оценка вопроса</b>
+
+Оцени, помогли ли тебе решить вопрос
+
+<i>Пожалуйста, удели время оценке. Это важно для статистики</i>""",
         reply_markup=question_finish_employee_kb(question=question),
     )
 
@@ -125,7 +128,7 @@ async def active_question(
             message=message,
             questions_repo=questions_repo,
             user=user,
-            active_question_token=question.token,
+            question=question,
         )
         return
 
@@ -354,30 +357,23 @@ async def handle_edited_message(
         )
 
 
-@user_q.callback_query(QuestionQualitySpecialist.filter(F.return_question.is_(False)))
+@user_q.callback_query(QuestionQualitySpecialist.filter())
 async def question_quality_employee(
     callback: CallbackQuery,
     callback_data: QuestionQualitySpecialist,
     questions_repo: QuestionsRequestsRepo,
 ):
-    question: Question = await questions_repo.questions.update_question(
+    question = await questions_repo.questions.update_question(
         token=callback_data.token, quality_employee=callback_data.answer
     )
 
     await callback.answer("Оценка успешно выставлена ❤️")
-    if callback_data.answer:
-        await callback.message.edit_text(
-            """Ты поставил оценку:
-👍 Дежурный <b>помог решить твой вопрос</b>""",
-            reply_markup=question_finish_employee_kb(question=question),
-        )
-    else:
-        await callback.message.edit_text(
-            """Ты поставил оценку:
-👎 Дежурный <b>не помог решить твой вопрос</b>""",
-            reply_markup=question_finish_employee_kb(question=question),
-        )
-    logger.info(
-        f"[Вопрос] - [Оценка] Пользователь {callback.from_user.username} ({callback.from_user.id}): Выставлена оценка {callback_data.answer} вопросу {question.token} от специалиста"
+
+    await callback.message.edit_text(
+        """<b>🔒 Вопрос закрыт</b>
+
+<i>Используй меню для взаимодействия с ботом</i>""",
+        reply_markup=question_finish_employee_kb(
+            question=question,
+        ),
     )
-    await callback.answer()

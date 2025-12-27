@@ -514,7 +514,7 @@ async def change_q_return_status(
 
 
 @topic_router.callback_query(IsTopicMessage() and QuestionQualityDuty.filter())
-async def quality_q_duty(
+async def question_quality_duty(
     callback: CallbackQuery,
     callback_data: QuestionQualityDuty,
     user: Employee,

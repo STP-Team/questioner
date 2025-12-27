@@ -218,7 +218,7 @@ async def on_confirm(
         topic_text = f"""Вопрос задает <b>{format_fullname(user, True, True)}</b>
 
 <blockquote expandable><b>👔 Должность:</b> {user.position}
-<b>👑 Руководитель:</b> {format_fullname(head, True, True)}
+<b>👑 Руководитель:</b> <b>{format_fullname(head, True, True)}</b>
 
 <b>❓ Вопросов:</b> за день {employee_topics_today} / за месяц {employee_topics_month}</blockquote>
 
