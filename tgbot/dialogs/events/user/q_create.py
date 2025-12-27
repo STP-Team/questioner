@@ -191,7 +191,7 @@ async def on_confirm(
             chat_id=target_forum_id,
             name=f"{user.division} | {short_name(user.fullname)}"
             if group_settings.get_setting("show_division")
-            else format_fullname(user, True, True),
+            else short_name(user.fullname),
             icon_custom_emoji_id=group_settings.get_setting("emoji_open"),
         )
 
