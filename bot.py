@@ -36,6 +36,33 @@ bot_config = load_config(".env")
 logger = logging.getLogger(__name__)
 
 
+# async def on_startup(bot: Bot):
+#     if bot_config.tg_bot.activity_status:
+#         timeout_msg = f"Да ({bot_config.tg_bot.activity_warn_minutes}/{bot_config.tg_bot.activity_close_minutes} минут)"
+#     else:
+#         timeout_msg = "Нет"
+#
+#     if bot_config.tg_bot.remove_old_questions:
+#         remove_topics_msg = (
+#             f"Да (старше {bot_config.tg_bot.remove_old_questions_days} дней)"
+#         )
+#     else:
+#         remove_topics_msg = "Нет"
+#
+#     await bot.send_message(
+#         chat_id=bot_config.tg_bot.ntp_forum_id,
+#         text=f"""<b>🚀 Запуск</b>
+#
+# Вопросник запущен со следующими параметрами:
+# <b>- Направление:</b> {bot_config.tg_bot.division}
+# <b>- Запрашивать регламент:</b> {"Да" if bot_config.tg_bot.ask_clever_link else "Нет"}
+# <b>- Закрывать по таймауту:</b> {timeout_msg}
+# <b>- Удалять старые вопросы:</b> {remove_topics_msg}
+#
+# <blockquote>База данных: {"Основная" if bot_config.db.main_db == "STPMain" else "Запасная"}</blockquote>""",
+#     )
+
+
 async def on_startup_webhook(bot: Bot, config: Config) -> None:
     """Настройка webhook при запуске бота.
 
@@ -109,6 +136,7 @@ def register_middlewares(
     for middleware in [
         config_middleware,
         database_middleware,
+        access_middleware,
         users_middleware,
         message_pairing_middleware,
         access_middleware,
@@ -116,6 +144,8 @@ def register_middlewares(
         dp.message.outer_middleware(middleware)
         dp.callback_query.outer_middleware(middleware)
         dp.edited_message.outer_middleware(middleware)
+        dp.edited_message.outer_middleware()
+        dp.chat_member.outer_middleware(middleware)
 
 
 def get_storage(config):
