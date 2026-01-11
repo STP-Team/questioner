@@ -19,10 +19,11 @@ from stp_database import create_engine, create_session_pool
 from tgbot.config import Config, load_config
 from tgbot.dialogs.menus import dialogs_list
 from tgbot.handlers import routers_list
+from tgbot.middlewares.AccessMiddleware import AccessMiddleware
 from tgbot.middlewares.ConfigMiddleware import ConfigMiddleware
 from tgbot.middlewares.DatabaseMiddleware import DatabaseMiddleware
 from tgbot.middlewares.MessagePairingMiddleware import MessagePairingMiddleware
-from tgbot.middlewares.UserAccessMiddleware import UserAccessMiddleware
+from tgbot.middlewares.UsersMiddleware import UsersMiddleware
 from tgbot.services.logger import setup_logging
 from tgbot.services.scheduler import (
     register_scheduler_dependencies,
@@ -100,15 +101,17 @@ def register_middlewares(
     )
 
     # User management middlewares
-    access_middleware = UserAccessMiddleware(bot=bot)
+    users_middleware = UsersMiddleware(bot=bot)
     message_pairing_middleware = MessagePairingMiddleware()
+    access_middleware = AccessMiddleware()
 
     # Apply to messages
     for middleware in [
         config_middleware,
         database_middleware,
-        access_middleware,
+        users_middleware,
         message_pairing_middleware,
+        access_middleware,
     ]:
         dp.message.outer_middleware(middleware)
         dp.callback_query.outer_middleware(middleware)

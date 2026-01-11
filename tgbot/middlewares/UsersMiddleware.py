@@ -9,7 +9,7 @@ from stp_database.repo.STP import MainRequestsRepo
 logger = logging.getLogger(__name__)
 
 
-class UserAccessMiddleware(BaseMiddleware):
+class UsersMiddleware(BaseMiddleware):
     """Middleware responsible for updating user information."""
 
     def __init__(self, bot: Bot) -> None:
