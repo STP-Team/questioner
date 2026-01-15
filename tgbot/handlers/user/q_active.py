@@ -123,7 +123,7 @@ async def active_question(
     if message.message_thread_id:
         return
 
-    if message.voice:
+    if message.voice or message.audio:
         await message.reply(
             """<b>⚠️ Голосовые сообщения недоступны</b>
 

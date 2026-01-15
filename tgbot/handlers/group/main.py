@@ -52,10 +52,11 @@ async def handle_q_message(
     questions_repo: QuestionsRequestsRepo,
     stp_repo: MainRequestsRepo,
 ):
-    question: Question = await questions_repo.questions.get_question(
+    question = await questions_repo.questions.get_question(
         group_id=message.chat.id, topic_id=message.message_thread_id
     )
-    employee: Employee = await stp_repo.employee.get_users(
+    
+    employee = await stp_repo.employee.get_users(
         user_id=question.employee_userid
     )
 
