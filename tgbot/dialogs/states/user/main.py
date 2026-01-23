@@ -11,7 +11,6 @@ class UserSG(StatesGroup):
 class QuestionSG(StatesGroup):
     question_text = State()
     question_link = State()
-    confirmation = State()
 
 
 class ReturnSG(StatesGroup):

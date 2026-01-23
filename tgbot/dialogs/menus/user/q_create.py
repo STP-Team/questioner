@@ -2,17 +2,15 @@ from typing import Any
 
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput, TextInput
-from aiogram_dialog.widgets.kbd import Button, Next, Row, SwitchTo
-from aiogram_dialog.widgets.text import Const, Format, Multi
-from magic_filter import F
+from aiogram_dialog.widgets.kbd import Row, SwitchTo
+from aiogram_dialog.widgets.text import Const
 
 from tgbot.dialogs.events.user.q_create import (
     link_error,
-    on_confirm,
+    on_link_success,
     on_message_input,
     validate_link,
 )
-from tgbot.dialogs.getters.user.q_create import confirmation_getter
 from tgbot.dialogs.states.user.main import QuestionSG
 from tgbot.dialogs.widgets.buttons import HOME_BTN
 
@@ -33,7 +31,7 @@ question_link = Window(
     TextInput(
         id="link",
         type_factory=validate_link,
-        on_success=Next(),
+        on_success=on_link_success,
         on_error=link_error,
     ),
     Row(
@@ -48,48 +46,6 @@ question_link = Window(
 )
 
 
-confirmation = Window(
-    Multi(
-        Format("""✅ <b>Подтверждение</b>
-
-📝 <b>Твой вопрос:</b>
-<blockquote>{user_text}</blockquote>"""),
-        Format("\n📎 Есть прикрепленные файлы", when=F["has_attachments"]),
-        Format(
-            """
-
-🔗 <b>Ссылка на регламент:</b>
-<code>{link}</code>""",
-            when=F["ask_clever_link"] & F["link"],
-        ),
-        Format("\n\nВсе верно?"),
-        sep="",
-    ),
-    Button(
-        Const("✅ Подтвердить"),
-        id="confirm_btn",
-        on_click=on_confirm,
-    ),
-    Row(
-        SwitchTo(
-            Const("↩️ Назад"),
-            id="back_to_link",
-            state=QuestionSG.question_link,
-            when=F["ask_clever_link"],
-        ),
-        SwitchTo(
-            Const("↩️ Назад"),
-            id="back_to_text",
-            state=QuestionSG.question_text,
-            when=~F["ask_clever_link"],
-        ),
-        HOME_BTN,
-    ),
-    getter=confirmation_getter,
-    state=QuestionSG.confirmation,
-)
-
-
 async def on_start(_on_start: Any, _dialog_manager: DialogManager, **_kwargs):
     """Установка параметров диалога по умолчанию при запуске.
 
@@ -99,4 +55,4 @@ async def on_start(_on_start: Any, _dialog_manager: DialogManager, **_kwargs):
     """
 
 
-question_dialog = Dialog(question_text, question_link, confirmation, on_start=on_start)
+question_dialog = Dialog(question_text, question_link, on_start=on_start)

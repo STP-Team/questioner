@@ -57,9 +57,9 @@ async def on_message_input(
         group_id=target_forum_id
     )
 
-    # Если настройка ask_clever_link выключена, пропускаем этап ввода ссылки
+    # Если настройка ask_clever_link выключена, создаем вопрос сразу
     if not group_settings.get_setting("ask_clever_link"):
-        await dialog_manager.switch_to(QuestionSG.confirmation)
+        await create_question(message, dialog_manager)
         return
 
     # Проверяем, есть ли ссылка на Клевер в тексте сообщения
@@ -73,10 +73,10 @@ async def on_message_input(
             # Сохраняем ссылку в данные диалога
             dialog_manager.dialog_data["link"] = validated_link
 
-            # Переходим сразу к подтверждению, пропуская этап ввода ссылки
-            await dialog_manager.switch_to(QuestionSG.confirmation)
+            # Создаем вопрос сразу, пропуская этап ввода ссылки
+            await create_question(message, dialog_manager)
         except ValueError:
-            # Если ссылка невалидна, переходим к обычному этапу ввода ссылки
+            # Если ссылка невалидна, переходим к этапу ввода ссылки
             await dialog_manager.next()
     else:
         await dialog_manager.next()
@@ -177,10 +177,22 @@ async def link_error(
     await message.answer(f"❌ {str(error_)}")
 
 
-async def on_confirm(
-    event: CallbackQuery, _button, dialog_manager: DialogManager, **_kwargs
+async def on_link_success(
+    message: Message, _widget, dialog_manager: DialogManager, **_kwargs
 ):
-    """Обработка подтверждения отправки вопроса."""
+    """Обработка успешного ввода ссылки - создает вопрос."""
+    await create_question(message, dialog_manager)
+
+
+async def create_question(
+    event: CallbackQuery | Message, dialog_manager: DialogManager
+):
+    """Создание вопроса.
+
+    Args:
+        event: Событие (CallbackQuery или Message)
+        dialog_manager: Менеджер диалога
+    """
     # Получаем данные из контекста
     user: Employee = dialog_manager.middleware_data["user"]
     questions_repo: QuestionsRequestsRepo = dialog_manager.middleware_data[
@@ -193,7 +205,11 @@ async def on_confirm(
     # Проверяем активные вопросы
     active_questions = await questions_repo.questions.get_active_questions()
     if user.user_id in [q.employee_userid for q in active_questions]:
-        await event.answer("У тебя уже есть активный вопрос")
+        answer_text = "У тебя уже есть активный вопрос"
+        if isinstance(event, CallbackQuery):
+            await event.answer(answer_text)
+        else:
+            await event.answer(answer_text)
         await dialog_manager.done()
         return
 
@@ -203,7 +219,11 @@ async def on_confirm(
     question_text = user_message.get("text", "")
 
     if not question_text or question_text.strip() == "":
-        await event.answer("❌ Вопрос не может быть пустым")
+        answer_text = "❌ Вопрос не может быть пустым"
+        if isinstance(event, CallbackQuery):
+            await event.answer(answer_text)
+        else:
+            await event.answer(answer_text)
         await dialog_manager.done()
         return
 
@@ -245,12 +265,20 @@ async def on_confirm(
         )
 
         # Отправляем сообщение об успехе
-        await event.message.answer(
-            """<b>✅ Успешно</b>
+        if isinstance(event, CallbackQuery):
+            await event.message.answer(
+                """<b>✅ Успешно</b>
 
 Вопрос передан на рассмотрение, в скором времени тебе ответят""",
-            reply_markup=cancel_question_kb(token=new_question.token),
-        )
+                reply_markup=cancel_question_kb(token=new_question.token),
+            )
+        else:
+            await event.answer(
+                """<b>✅ Успешно</b>
+
+Вопрос передан на рассмотрение, в скором времени тебе ответят""",
+                reply_markup=cancel_question_kb(token=new_question.token),
+            )
 
         # Отправляем информационное сообщение в тему
         topic_text = f"""Вопрос задает <b>{format_fullname(user, True, True)}</b>
@@ -300,13 +328,19 @@ async def on_confirm(
         )
 
         await dialog_manager.done(show_mode=ShowMode.NO_UPDATE)
-        await event.message.delete()
 
-        await event.answer(
-            "Вопрос передан на рассмотрение, в скором времени тебе ответят"
-        )
+        if isinstance(event, CallbackQuery):
+            if event.message:
+                await event.message.delete()
+            await event.answer(
+                "Вопрос передан на рассмотрение, в скором времени тебе ответят"
+            )
 
     except Exception as e:
         logging.error(f"Ошибка при создании вопроса: {e}")
-        await event.answer("❌ Произошла ошибка при создании вопроса")
+        answer_text = "❌ Произошла ошибка при создании вопроса"
+        if isinstance(event, CallbackQuery):
+            await event.answer(answer_text)
+        else:
+            await event.answer(answer_text)
         await dialog_manager.done()

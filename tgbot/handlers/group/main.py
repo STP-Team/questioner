@@ -55,10 +55,8 @@ async def handle_q_message(
     question = await questions_repo.questions.get_question(
         group_id=message.chat.id, topic_id=message.message_thread_id
     )
-    
-    employee = await stp_repo.employee.get_users(
-        user_id=question.employee_userid
-    )
+
+    employee = await stp_repo.employee.get_users(user_id=question.employee_userid)
 
     if message.message_thread_id != question.topic_id:
         return
